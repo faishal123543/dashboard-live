@@ -1,0 +1,347 @@
+@{
+    ViewData["Title"] = "Dashboard Overview";
+}
+
+<!-- Live indicator -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="live-indicator">Live data auto-refreshing every 30s</div>
+    <small class="text-muted">Last updated: <span id="lastUpdated">--:--:--</span></small>
+</div>
+
+<!-- KPI Cards Row 1 -->
+<div class="kpi-grid">
+    <div class="kpi-card info">
+        <div class="kpi-card-header">
+            <div class="kpi-card-title">
+                <div class="kpi-card-icon"><i class="fas fa-file-invoice"></i></div>
+                Total Applications
+            </div>
+        </div>
+        <div class="kpi-card-value" id="totalApplications">1,247</div>
+        <span class="kpi-card-change"><i class="fas fa-arrow-up"></i> 15.8%</span>
+    </div>
+
+    <div class="kpi-card warning">
+        <div class="kpi-card-header">
+            <div class="kpi-card-title">
+                <div class="kpi-card-icon"><i class="fas fa-clock"></i></div>
+                In Progress
+            </div>
+        </div>
+        <div class="kpi-card-value" id="inProgressCount">23</div>
+        <span class="kpi-card-change"><i class="fas fa-arrow-up"></i> 8.2%</span>
+    </div>
+
+    <div class="kpi-card success">
+        <div class="kpi-card-header">
+            <div class="kpi-card-title">
+                <div class="kpi-card-icon"><i class="fas fa-check-circle"></i></div>
+                Completed
+            </div>
+        </div>
+        <div class="kpi-card-value" id="completedCount">1,042</div>
+        <span class="kpi-card-change"><i class="fas fa-arrow-up"></i> 34.0%</span>
+    </div>
+
+    <div class="kpi-card danger">
+        <div class="kpi-card-header">
+            <div class="kpi-card-title">
+                <div class="kpi-card-icon"><i class="fas fa-times-circle"></i></div>
+                Rejected
+            </div>
+        </div>
+        <div class="kpi-card-value" id="rejectedCount">156</div>
+        <span class="kpi-card-change negative"><i class="fas fa-arrow-down"></i> 24.2%</span>
+    </div>
+</div>
+
+<!-- KPI Cards Row 2 - Financial Metrics -->
+<div class="kpi-grid">
+    <div class="kpi-card info">
+        <div class="kpi-card-header">
+            <div class="kpi-card-title">
+                <div class="kpi-card-icon"><i class="fas fa-dollar-sign"></i></div>
+                Today's Approved
+            </div>
+        </div>
+        <div class="kpi-card-value" id="todayApproved">$142,500</div>
+        <span class="kpi-card-change"><i class="fas fa-arrow-up"></i> 12.5%</span>
+    </div>
+
+    <div class="kpi-card success">
+        <div class="kpi-card-header">
+            <div class="kpi-card-title">
+                <div class="kpi-card-icon"><i class="fas fa-chart-line"></i></div>
+                Monthly Approved
+            </div>
+        </div>
+        <div class="kpi-card-value" id="monthlyApproved">$3.65M</div>
+        <span class="kpi-card-change"><i class="fas fa-arrow-up"></i> 18.3%</span>
+    </div>
+
+    <div class="kpi-card danger">
+        <div class="kpi-card-header">
+            <div class="kpi-card-title">
+                <div class="kpi-card-icon"><i class="fas fa-percent"></i></div>
+                Rejection Rate
+            </div>
+        </div>
+        <div class="kpi-card-value" id="rejectionPct">12.5%</div>
+        <span class="kpi-card-change negative"><i class="fas fa-arrow-down"></i> 2.1%</span>
+    </div>
+
+    <div class="kpi-card warning">
+        <div class="kpi-card-header">
+            <div class="kpi-card-title">
+                <div class="kpi-card-icon"><i class="fas fa-ban"></i></div>
+                Cancelled
+            </div>
+        </div>
+        <div class="kpi-card-value" id="cancelledCount">26</div>
+        <span class="kpi-card-change"><i class="fas fa-arrow-down"></i> 5.4%</span>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="charts-grid">
+    <!-- Sales Overview / Applications per day -->
+    <div class="chart-card">
+        <div class="chart-card-header">
+            <div>
+                <div class="chart-card-title">
+                    <i class="fas fa-chart-bar" style="color: var(--accent);"></i>
+                    Applications Overview
+                </div>
+                <div class="chart-card-amount">
+                    $9,257.51 <span class="change">+$145.30 increase</span>
+                </div>
+            </div>
+            <div class="chart-filters">
+                <button class="filter-btn"><i class="fas fa-filter"></i> Filter</button>
+                <button class="filter-btn active">Sort</button>
+            </div>
+        </div>
+        <div class="chart-canvas-wrapper">
+            <canvas id="dailyChart"></canvas>
+        </div>
+        <div class="chart-legend">
+            <div class="legend-item"><span class="legend-dot" style="background:#00d4ff"></span> Completed</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#0099cc"></span> In Progress</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#7c3aed"></span> Rejected</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#ffaa00"></span> Cancelled</div>
+        </div>
+    </div>
+
+    <!-- Total Subscriber / Status Distribution -->
+    <div class="chart-card">
+        <div class="chart-card-header">
+            <div>
+                <div class="chart-card-title">
+                    <i class="fas fa-users" style="color: var(--accent);"></i>
+                    Total Subscribers
+                </div>
+                <div class="chart-card-amount">
+                    24,473 <span class="change">+6.7%</span>
+                </div>
+            </div>
+            <div class="chart-filters">
+                <button class="filter-btn active">Weekly</button>
+            </div>
+        </div>
+        <div class="chart-canvas-wrapper">
+            <canvas id="subscriberChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Second Charts Row -->
+<div class="charts-grid" style="grid-template-columns: 1fr 2fr;">
+    <!-- Sales Distribution (Doughnut Chart) -->
+    <div class="chart-card">
+        <div class="chart-card-header">
+            <div>
+                <div class="chart-card-title">
+                    <i class="fas fa-chart-pie" style="color: var(--accent);"></i>
+                    Sales Distribution
+                </div>
+            </div>
+            <div class="chart-filters">
+                <button class="filter-btn active">Monthly</button>
+            </div>
+        </div>
+        <div class="chart-canvas-wrapper">
+            <canvas id="distributionChart"></canvas>
+        </div>
+        <div class="chart-legend">
+            <div class="legend-item"><span class="legend-dot" style="background:#00d4ff"></span> Website</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#7c3aed"></span> Mobile App</div>
+            <div class="legend-item"><span class="legend-dot" style="background:#ffaa00"></span> Other</div>
+        </div>
+    </div>
+
+    <!-- List of Integration / Recent Applications -->
+    <div class="chart-card">
+        <div class="chart-card-header">
+            <div class="chart-card-title">
+                <i class="fas fa-list" style="color: var(--accent);"></i>
+                List of Integration
+            </div>
+            <a href="#" class="see-all">See All</a>
+        </div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>APPLICATION</th>
+                    <th>TYPE</th>
+                    <th>RATE</th>
+                    <th class="text-end">PROFIT</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fab fa-stripe-s" style="color: #635bff; font-size: 20px;"></i>
+                            <strong>Stripe</strong>
+                        </div>
+                    </td>
+                    <td>Finance</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div style="width: 100px; height: 4px; background: var(--bg-hover); border-radius: 2px; overflow: hidden;">
+                                <div style="width: 40%; height: 100%; background: var(--accent);"></div>
+                            </div>
+                            <span>40%</span>
+                        </div>
+                    </td>
+                    <td class="text-end"><strong>$650.00</strong></td>
+                </tr>
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fas fa-bolt" style="color: #ff6b35; font-size: 18px;"></i>
+                            <strong>Zapier</strong>
+                        </div>
+                    </td>
+                    <td>CRM</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div style="width: 100px; height: 4px; background: var(--bg-hover); border-radius: 2px; overflow: hidden;">
+                                <div style="width: 80%; height: 100%; background: var(--warning);"></div>
+                            </div>
+                            <span>80%</span>
+                        </div>
+                    </td>
+                    <td class="text-end"><strong>$720.50</strong></td>
+                </tr>
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fab fa-shopify" style="color: #95bf47; font-size: 18px;"></i>
+                            <strong>Shopify</strong>
+                        </div>
+                    </td>
+                    <td>Marketplace</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div style="width: 100px; height: 4px; background: var(--bg-hover); border-radius: 2px; overflow: hidden;">
+                                <div style="width: 20%; height: 100%; background: var(--success);"></div>
+                            </div>
+                            <span>20%</span>
+                        </div>
+                    </td>
+                    <td class="text-end"><strong>$432.25</strong></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Recent Applications Table -->
+<div class="table-section">
+    <div class="table-section-header">
+        <h5 class="section-title"><i class="fas fa-file-invoice me-2" style="color: var(--accent);"></i> Recent Applications</h5>
+        <a href="/Applications" class="see-all">See All <i class="fas fa-arrow-right"></i></a>
+    </div>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>PROCESS NUMBER</th>
+                    <th>CUSTOMER NAME</th>
+                    <th>MOBILE</th>
+                    <th>PARTNER</th>
+                    <th>AMOUNT</th>
+                    <th>STATUS</th>
+                    <th>DATE</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>APP-2024-001010</strong></td>
+                    <td>Sara Al-Falahi</td>
+                    <td>+971 510 123 456</td>
+                    <td>Global Finance Hub</td>
+                    <td><strong>$110,000</strong></td>
+                    <td><span class="status-badge completed"><i class="fas fa-check"></i> Completed</span></td>
+                    <td>Today</td>
+                </tr>
+                <tr>
+                    <td><strong>APP-2024-003005</strong></td>
+                    <td>Layla Al-Naqbi</td>
+                    <td>+971 504 567 890</td>
+                    <td>Gulf Credit Corp</td>
+                    <td>-</td>
+                    <td><span class="status-badge in-progress"><i class="fas fa-clock"></i> In Progress</span></td>
+                    <td>Today</td>
+                </tr>
+                <tr>
+                    <td><strong>APP-2024-001009</strong></td>
+                    <td>Rashid Al-Suwaidi</td>
+                    <td>+971 509 012 345</td>
+                    <td>Secure Lending</td>
+                    <td><strong>$70,000</strong></td>
+                    <td><span class="status-badge completed"><i class="fas fa-check"></i> Completed</span></td>
+                    <td>Yesterday</td>
+                </tr>
+                <tr>
+                    <td><strong>APP-2024-002005</strong></td>
+                    <td>Sara Al-Falahi</td>
+                    <td>+971 510 123 456</td>
+                    <td>Digital Loans</td>
+                    <td>-</td>
+                    <td><span class="status-badge rejected"><i class="fas fa-times"></i> Rejected</span></td>
+                    <td>2 days ago</td>
+                </tr>
+                <tr>
+                    <td><strong>APP-2024-001008</strong></td>
+                    <td>Hana Al-Khayeli</td>
+                    <td>+971 508 901 234</td>
+                    <td>Premium Financial</td>
+                    <td><strong>$80,000</strong></td>
+                    <td><span class="status-badge completed"><i class="fas fa-check"></i> Completed</span></td>
+                    <td>3 days ago</td>
+                </tr>
+                <tr>
+                    <td><strong>APP-2024-004003</strong></td>
+                    <td>Salim Al-Kaabi</td>
+                    <td>+971 507 890 123</td>
+                    <td>Global Finance Hub</td>
+                    <td>-</td>
+                    <td><span class="status-badge cancelled"><i class="fas fa-ban"></i> Cancelled</span></td>
+                    <td>5 days ago</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            initializeAllCharts();
+            startAutoRefresh();
+            updateLastUpdatedTime();
+        });
+    </script>
+}

@@ -1,0 +1,89 @@
+@model Fintech.Backoffice.Web.Controllers.VerifyOtpModel
+@{
+    Layout = "_AuthLayout";
+    ViewData["Title"] = "Verify OTP";
+    var email = ViewData["Email"]?.ToString() ?? "";
+    var devOtp = ViewData["DevModeOtp"]?.ToString();
+    var successMsg = ViewData["SuccessMessage"]?.ToString();
+}
+
+<div class="auth-card">
+    <div class="auth-logo">
+        <i class="fas fa-lock"></i>
+    </div>
+    <h2 class="auth-title">Verify Your Identity</h2>
+    <p class="auth-subtitle">
+        We've sent a 6-digit code to<br />
+        <strong style="color: var(--accent);">@email</strong>
+    </p>
+
+    @if (!string.IsNullOrEmpty(successMsg))
+    {
+        <div class="auth-alert auth-alert-success">
+            <i class="fas fa-check-circle"></i> @successMsg
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(devOtp))
+    {
+        <div class="auth-alert auth-alert-info">
+            <i class="fas fa-info-circle"></i>
+            <div>
+                <strong>Dev Mode (SMTP not configured)</strong><br />
+                Your OTP is: <strong style="font-size: 18px; color: var(--accent); letter-spacing: 4px;">@devOtp</strong><br />
+                <small>Configure Smtp in appsettings.json to send real emails.</small>
+            </div>
+        </div>
+    }
+
+    @if (!ViewData.ModelState.IsValid && ViewData.ModelState[""]?.Errors.Count > 0)
+    {
+        <div class="auth-alert auth-alert-danger">
+            <i class="fas fa-exclamation-circle"></i>
+            @ViewData.ModelState[""]!.Errors.First().ErrorMessage
+        </div>
+    }
+
+    <form method="post" asp-action="VerifyOtp" asp-route-returnUrl="@ViewData["ReturnUrl"]">
+        @Html.AntiForgeryToken()
+
+        <div class="auth-input-group">
+            <label asp-for="Otp" class="auth-label">One-Time Password</label>
+            <div class="otp-input-wrapper">
+                <input asp-for="Otp" type="text" inputmode="numeric" pattern="\d{6}" maxlength="6"
+                       class="otp-input" placeholder="------" autocomplete="one-time-code" autofocus />
+            </div>
+            <span asp-validation-for="Otp" class="auth-error"></span>
+            <small class="auth-hint"><i class="far fa-clock"></i> Expires in 5 minutes</small>
+        </div>
+
+        <button type="submit" class="auth-btn">
+            <i class="fas fa-check"></i> Verify & Sign In
+        </button>
+    </form>
+
+    <div class="auth-actions">
+        <form method="post" asp-action="ResendOtp" style="display:inline;">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="auth-link-btn">
+                <i class="fas fa-redo"></i> Resend OTP
+            </button>
+        </form>
+        <span class="auth-divider">|</span>
+        <a asp-action="Login" class="auth-link-btn">
+            <i class="fas fa-arrow-left"></i> Change Email
+        </a>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Auto-format OTP input - digits only
+        document.querySelector('.otp-input').addEventListener('input', function (e) {
+            this.value = this.value.replace(/[^0-9]/g, '');
+            if (this.value.length === 6) {
+                this.closest('form').submit();
+            }
+        });
+    </script>
+}

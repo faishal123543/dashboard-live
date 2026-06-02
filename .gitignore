@@ -1,0 +1,25 @@
+# Build outputs
+bin/
+obj/
+publish/
+
+# VS / Rider / VS Code
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+
+# Logs
+logs/
+*.log
+
+# Local secrets (NEVER commit)
+appsettings.Production.json
+*.pfx
+*.key
+secrets.json
+
+# OS junk
+Thumbs.db
+.DS_Store

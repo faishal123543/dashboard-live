@@ -1,0 +1,71 @@
+@model IEnumerable<StageCountDto>
+@{
+    ViewData["Title"] = "Daily Pipeline";
+    var initialJson = System.Text.Json.JsonSerializer.Serialize(Model,
+        new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase });
+}
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+        <h1 class="h4 fw-bold mb-1">
+            Invoice Loan — Pipeline Overview
+            <span class="badge bg-success-subtle text-success border border-success-subtle ms-2 align-middle small fw-normal">LIVE</span>
+        </h1>
+        <p class="text-muted small mb-0">Daily stage counts — auto-resets at midnight</p>
+    </div>
+    <button id="btn-refresh" type="button" class="btn btn-outline-primary btn-sm d-flex align-items-center gap-2">
+        <i id="btn-refresh-icon" class="bi bi-arrow-clockwise"></i>
+        <span id="btn-refresh-text">Refresh</span>
+    </button>
+</div>
+
+<!-- ── KPI strip ── -->
+<div class="row g-3 mb-4">
+    <div class="col-md-6">
+        <div class="card border-secondary-subtle h-100">
+            <div class="card-body">
+                <div class="text-uppercase small text-muted fw-semibold mb-1" style="letter-spacing:.5px">Total Applications Today</div>
+                <div class="display-6 fw-bold text-primary" id="kpi-total">0</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card border-secondary-subtle h-100">
+            <div class="card-body">
+                <div class="text-uppercase small text-muted fw-semibold mb-1" style="letter-spacing:.5px">Active Stages</div>
+                <div class="display-6 fw-bold text-success" id="kpi-active">0</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Stage cards ── -->
+<div id="stage-grid" class="row g-3 mb-4"></div>
+
+<!-- ── Chart ── -->
+<div class="card border-secondary-subtle mb-3">
+    <div class="card-body">
+        <div class="d-flex align-items-center mb-3">
+            <i class="bi bi-graph-up text-primary me-2"></i>
+            <h6 class="mb-0 fw-semibold">Stage Distribution</h6>
+        </div>
+        <div class="chart-wrapper">
+            <canvas id="stage-chart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- ── Bottleneck ── -->
+<div id="bottleneck" class="card border-secondary-subtle d-none">
+    <div class="card-body small text-muted">
+        <i class="bi bi-info-circle text-info me-2"></i>
+        <span id="bottleneck-text"></span>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        window.__INITIAL_STAGES__ = @Html.Raw(initialJson);
+    </script>
+    <script src="~/js/dashboard.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,208 @@
+@model List<Fintech.Backoffice.Web.Controllers.ApplicationViewModel>
+@{
+    var statusFilter = ViewData["StatusFilter"]?.ToString();
+    ViewData["Title"] = ViewData["PageTitle"]?.ToString() ?? "All Applications";
+}
+
+<!-- Filters Card -->
+<div class="chart-card mb-4">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label text-muted small">SEARCH</label>
+            <div class="input-group">
+                <span class="input-group-text" style="background:var(--bg-hover); border-color:var(--border); color:var(--text-muted);"><i class="fas fa-search"></i></span>
+                <input type="text" id="searchInput" class="form-control" placeholder="Process number or customer..." style="background:var(--bg-hover); border-color:var(--border); color:var(--text-primary);" />
+            </div>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label text-muted small">STATUS</label>
+            <select id="statusFilter" class="form-select" style="background:var(--bg-hover); border-color:var(--border); color:var(--text-primary);" onchange="window.location.href = this.value ? '/Applications?status=' + this.value : '/Applications'">
+                <option value="" selected="@(string.IsNullOrEmpty(statusFilter))">All Statuses</option>
+                <option value="Completed" selected="@(statusFilter == "Completed")">Completed</option>
+                <option value="In-Progress" selected="@(statusFilter == "In-Progress")">In Progress</option>
+                <option value="Rejected" selected="@(statusFilter == "Rejected")">Rejected</option>
+                <option value="Cancelled" selected="@(statusFilter == "Cancelled")">Cancelled</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label text-muted small">FROM DATE</label>
+            <input type="date" id="fromDate" class="form-control" style="background:var(--bg-hover); border-color:var(--border); color:var(--text-primary);" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label text-muted small">TO DATE</label>
+            <input type="date" id="toDate" class="form-control" style="background:var(--bg-hover); border-color:var(--border); color:var(--text-primary);" />
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button class="btn btn-primary"><i class="fas fa-filter"></i> Apply</button>
+            <button class="btn" style="background:var(--bg-hover); color:var(--text-secondary); border:1px solid var(--border);"><i class="fas fa-redo"></i> Reset</button>
+            <button class="btn btn-primary" onclick="exportToExcel()"><i class="fas fa-file-excel"></i> Export</button>
+        </div>
+    </div>
+</div>
+
+@{
+    var completedApps = Model.Where(x => x.Status == "Completed").ToList();
+    var today = DateTime.Now.Date;
+    var monthStart = new DateTime(today.Year, today.Month, 1);
+
+    var totalApproved = completedApps.Sum(x => x.ApprovedAmount);
+    var todayApproved = completedApps.Where(x => x.ApplicationDate.Date == today).Sum(x => x.ApprovedAmount);
+    var monthlyApproved = completedApps.Where(x => x.ApplicationDate >= monthStart).Sum(x => x.ApprovedAmount);
+    var avgApproved = completedApps.Any() ? completedApps.Average(x => x.ApprovedAmount) : 0;
+}
+
+<!-- Summary Cards - Counts -->
+<div class="kpi-grid mb-3">
+    <div class="kpi-card info">
+        <div class="kpi-card-header">
+            <div class="kpi-card-title">
+                <div class="kpi-card-icon"><i class="fas fa-file-invoice"></i></div>
+                Total Records
+            </div>
+        </div>
+        <div class="kpi-card-value">@Model.Count</div>
+    </div>
+    <div class="kpi-card success">
+        <div class="kpi-card-header">
+            <div class="kpi-card-title">
+                <div class="kpi-card-icon"><i class="fas fa-check-circle"></i></div>
+                Completed
+            </div>
+        </div>
+        <div class="kpi-card-value">@Model.Count(x => x.Status == "Completed")</div>
+    </div>
+    <div class="kpi-card warning">
+        <div class="kpi-card-header">
+            <div class="kpi-card-title">
+                <div class="kpi-card-icon"><i class="fas fa-clock"></i></div>
+                In Progress
+            </div>
+        </div>
+        <div class="kpi-card-value">@Model.Count(x => x.Status == "In-Progress")</div>
+    </div>
+    <div class="kpi-card danger">
+        <div class="kpi-card-header">
+            <div class="kpi-card-title">
+                <div class="kpi-card-icon"><i class="fas fa-times-circle"></i></div>
+                Rejected
+            </div>
+        </div>
+        <div class="kpi-card-value">@Model.Count(x => x.Status == "Rejected")</div>
+    </div>
+</div>
+
+<!-- Summary Cards - Approved Amounts -->
+<div class="kpi-grid mb-4">
+    <div class="kpi-card info">
+        <div class="kpi-card-header">
+            <div class="kpi-card-title">
+                <div class="kpi-card-icon"><i class="fas fa-dollar-sign"></i></div>
+                Today's Approved
+            </div>
+        </div>
+        <div class="kpi-card-value">$@todayApproved.ToString("N0")</div>
+        <span class="kpi-card-change"><i class="fas fa-calendar-day"></i> @today.ToString("MMM dd, yyyy")</span>
+    </div>
+    <div class="kpi-card success">
+        <div class="kpi-card-header">
+            <div class="kpi-card-title">
+                <div class="kpi-card-icon"><i class="fas fa-chart-line"></i></div>
+                Monthly Approved
+            </div>
+        </div>
+        <div class="kpi-card-value">$@monthlyApproved.ToString("N0")</div>
+        <span class="kpi-card-change"><i class="fas fa-calendar-alt"></i> @today.ToString("MMMM yyyy")</span>
+    </div>
+    <div class="kpi-card success">
+        <div class="kpi-card-header">
+            <div class="kpi-card-title">
+                <div class="kpi-card-icon"><i class="fas fa-coins"></i></div>
+                Total Approved
+            </div>
+        </div>
+        <div class="kpi-card-value">$@totalApproved.ToString("N0")</div>
+        <span class="kpi-card-change"><i class="fas fa-arrow-up"></i> All time</span>
+    </div>
+    <div class="kpi-card warning">
+        <div class="kpi-card-header">
+            <div class="kpi-card-title">
+                <div class="kpi-card-icon"><i class="fas fa-calculator"></i></div>
+                Avg. Approved
+            </div>
+        </div>
+        <div class="kpi-card-value">$@avgApproved.ToString("N0")</div>
+        <span class="kpi-card-change"><i class="fas fa-chart-bar"></i> Per application</span>
+    </div>
+</div>
+
+<!-- Applications Table -->
+<div class="table-section">
+    <div class="table-section-header">
+        <h5 class="section-title"><i class="fas fa-table me-2" style="color: var(--accent);"></i> Applications List</h5>
+        <small class="text-muted">Showing @Model.Count records</small>
+    </div>
+    <div class="table-responsive">
+        <table id="applicationsTable" class="table">
+            <thead>
+                <tr>
+                    <th>PROCESS NUMBER</th>
+                    <th>APP ID</th>
+                    <th>CUSTOMER</th>
+                    <th>MOBILE</th>
+                    <th>PARTNER</th>
+                    <th>AMOUNT</th>
+                    <th>STATUS</th>
+                    <th>DATE</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var app in Model)
+                {
+                    <tr>
+                        <td><strong>@app.ProcessNumber</strong></td>
+                        <td>@app.ApplicationId</td>
+                        <td>@app.CustomerName</td>
+                        <td>@app.MobileNumber</td>
+                        <td>@app.PartnerName</td>
+                        <td><strong>@(app.ApprovedAmount > 0 ? "$" + app.ApprovedAmount.ToString("N0") : "-")</strong></td>
+                        <td>
+                            @{
+                                var statusClass = app.Status.ToLower().Replace(" ", "-");
+                                var icon = app.Status switch
+                                {
+                                    "Completed" => "fa-check",
+                                    "Rejected" => "fa-times",
+                                    "In-Progress" => "fa-clock",
+                                    "Cancelled" => "fa-ban",
+                                    _ => "fa-question"
+                                };
+                            }
+                            <span class="status-badge @statusClass"><i class="fas @icon"></i> @app.Status</span>
+                        </td>
+                        <td>@app.ApplicationDate.ToString("MMM dd, yyyy")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('#applicationsTable').DataTable({
+                pageLength: 10,
+                lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+                order: [[7, 'desc']],
+                language: {
+                    search: "",
+                    searchPlaceholder: "Search applications..."
+                }
+            });
+        });
+
+        function exportToExcel() {
+            alert('Export to Excel feature - will be integrated with EPPlus backend');
+        }
+    </script>
+}

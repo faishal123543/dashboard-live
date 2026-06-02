@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - FinTech Backoffice Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" />
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/auth.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-chart-line"></i>
+                    <span>FinTech</span>
+                </div>
+                <small class="logo-sub">Backoffice Dashboard</small>
+            </div>
+
+            @{
+                var sessionUserName = Context.Session.GetString("UserName") ?? "Guest";
+                var sessionUserEmail = Context.Session.GetString("UserEmail") ?? "";
+            }
+            <div class="user-profile">
+                <div class="avatar">
+                    <i class="fas fa-user-circle"></i>
+                </div>
+                <div class="user-info">
+                    <div class="user-name">@sessionUserName</div>
+                    <small class="user-role">@(string.IsNullOrEmpty(sessionUserEmail) ? "Admin" : sessionUserEmail)</small>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <span class="nav-section-title">WORKSPACE</span>
+                    <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" || ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")" asp-controller="Dashboard" asp-action="Index">
+                        <i class="fas fa-home"></i> Home
+                    </a>
+                    <a class="nav-link" href="#">
+                        <i class="fas fa-users"></i> Team
+                    </a>
+                </div>
+
+                @{
+                    var currentController = ViewContext.RouteData.Values["controller"]?.ToString();
+                    var currentStatus = ViewContext.HttpContext.Request.Query["status"].ToString();
+                    var isApplications = currentController == "Applications";
+                }
+                <div class="nav-section">
+                    <span class="nav-section-title">APPLICATIONS</span>
+                    <a class="nav-link @(isApplications && string.IsNullOrEmpty(currentStatus) ? "active" : "")" asp-controller="Applications" asp-action="Index">
+                        <i class="fas fa-file-invoice-dollar"></i> All Applications
+                    </a>
+                    <a class="nav-link @(isApplications && currentStatus == "In-Progress" ? "active" : "")" asp-controller="Applications" asp-action="Index" asp-route-status="In-Progress">
+                        <i class="fas fa-clock"></i> In Progress
+                    </a>
+                    <a class="nav-link @(isApplications && currentStatus == "Completed" ? "active" : "")" asp-controller="Applications" asp-action="Index" asp-route-status="Completed">
+                        <i class="fas fa-check-circle"></i> Completed
+                    </a>
+                    <a class="nav-link @(isApplications && currentStatus == "Rejected" ? "active" : "")" asp-controller="Applications" asp-action="Index" asp-route-status="Rejected">
+                        <i class="fas fa-times-circle"></i> Rejected
+                    </a>
+                    <a class="nav-link @(isApplications && currentStatus == "Cancelled" ? "active" : "")" asp-controller="Applications" asp-action="Index" asp-route-status="Cancelled">
+                        <i class="fas fa-ban"></i> Cancelled
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <span class="nav-section-title">ANALYTICS</span>
+                    <a class="nav-link @(currentController == "Reports" ? "active" : "")" asp-controller="Reports" asp-action="Index">
+                        <i class="fas fa-chart-bar"></i> Reports
+                    </a>
+                    <a class="nav-link @(currentController == "Partners" ? "active" : "")" asp-controller="Partners" asp-action="Index">
+                        <i class="fas fa-handshake"></i> Partners
+                    </a>
+                </div>
+
+                @{
+                    var currentAction = ViewContext.RouteData.Values["action"]?.ToString();
+                }
+                <div class="nav-section">
+                    <span class="nav-section-title">TAGS</span>
+                    <a class="nav-link @(currentController == "Tags" && currentAction == "Urgent" ? "active" : "")" asp-controller="Tags" asp-action="Urgent">
+                        <span class="tag-dot urgent"></span> Urgent
+                    </a>
+                    <a class="nav-link @(currentController == "Tags" && currentAction == "Reviewed" ? "active" : "")" asp-controller="Tags" asp-action="Reviewed">
+                        <span class="tag-dot reviewed"></span> Reviewed
+                    </a>
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <a class="nav-link" href="#">
+                    <i class="fas fa-cog"></i> Settings
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-navbar">
+                <div class="navbar-left">
+                    <button class="btn-icon mobile-toggle" id="sidebarToggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <div class="page-title">
+                        <h4>@ViewData["Title"]</h4>
+                        <small class="text-muted">Track your performance and analytics here</small>
+                    </div>
+                </div>
+                <div class="navbar-right">
+                    <div class="date-range">
+                        <i class="far fa-calendar"></i>
+                        <span>Oct 2024 - Dec 2024</span>
+                    </div>
+                    <button class="btn btn-primary btn-export">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                    <button class="btn-icon notification-btn">
+                        <i class="fas fa-bell"></i>
+                        <span class="badge">3</span>
+                    </button>
+
+                    <!-- User menu -->
+                    <div class="user-menu">
+                        <button class="user-menu-toggle" id="userMenuToggle" type="button">
+                            <i class="fas fa-user-circle"></i>
+                            <span class="d-none d-md-inline">@sessionUserName</span>
+                            <i class="fas fa-chevron-down" style="font-size: 10px;"></i>
+                        </button>
+                        <div class="user-menu-dropdown" id="userMenuDropdown">
+                            <div class="user-menu-header">
+                                <div style="font-weight:600; color:var(--text-primary);">@sessionUserName</div>
+                                <small class="text-muted">@sessionUserEmail</small>
+                            </div>
+                            <a class="user-menu-item" href="#"><i class="fas fa-user"></i> My Profile</a>
+                            <a class="user-menu-item" href="#"><i class="fas fa-cog"></i> Settings</a>
+                            <form method="post" asp-controller="Account" asp-action="Logout" style="margin:0;">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="user-menu-item danger">
+                                    <i class="fas fa-sign-out-alt"></i> Logout
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="page-content">
+                @RenderBody()
+            </div>
+        </main>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    <script src="~/js/dashboard.js" asp-append-version="true"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
