@@ -20,6 +20,9 @@ namespace LoanDashboard.Services;
 /// To add a NEW stage to the dashboard in production, just add its name to
 /// <c>KnownStages</c> in appsettings.json — no code change, no redeploy
 /// beyond a config refresh.
+///
+/// Counts can additionally be filtered by Partner via the optional
+/// <c>@PartnerId</c> parameter — null/0 means "all partners".
 /// </summary>
 public class StageService : IStageService
 {
@@ -29,7 +32,8 @@ public class StageService : IStageService
 
     /// <summary>
     /// Returns the entire stage catalog (latest workflow) joined with today's
-    /// completion counts. C# filters to <c>KnownStages</c> afterward.
+    /// completion counts, optionally filtered by Partner_Id. C# filters to
+    /// <c>KnownStages</c> afterward.
     /// </summary>
     private const string StageCountSql = @"
         ;WITH stage_master AS (
@@ -49,6 +53,7 @@ public class StageService : IStageService
               AND   ps.CompletedOn IS NOT NULL
               AND   ps.CreatedOn  >= CAST(GETDATE() AS DATE)
               AND   ps.CreatedOn  <  DATEADD(day, 1, CAST(GETDATE() AS DATE))
+              AND   (@PartnerId IS NULL OR p.Partner_Id = @PartnerId)
             GROUP BY ps.StageNo
         )
         SELECT  sm.StageNo                            AS StageNo,
@@ -66,20 +71,27 @@ public class StageService : IStageService
         _logger        = logger;
     }
 
-    public async Task<IReadOnlyList<StageCountDto>> GetStageCountsAsync(CancellationToken ct = default)
+    public async Task<IReadOnlyList<StageCountDto>> GetStageCountsAsync(int? partnerId = null, CancellationToken ct = default)
     {
+        // Treat 0 as "all partners" so the UI can send a single sentinel value.
+        int? effectivePartnerId = (partnerId is null or 0) ? null : partnerId;
+
         // 1) Pull the full DB picture
         List<StageCountDto> dbRows;
         try
         {
             await using var conn = new SqlConnection(_connectionString);
             var rows = await conn.QueryAsync<StageCountDto>(
-                new CommandDefinition(StageCountSql, commandTimeout: 30, cancellationToken: ct));
+                new CommandDefinition(
+                    StageCountSql,
+                    new { PartnerId = effectivePartnerId },
+                    commandTimeout: 30,
+                    cancellationToken: ct));
             dbRows = rows.ToList();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to fetch stage counts");
+            _logger.LogError(ex, "Failed to fetch stage counts (partnerId={PartnerId})", effectivePartnerId);
             dbRows = new List<StageCountDto>();
         }
 

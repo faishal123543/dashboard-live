@@ -1,7 +1,11 @@
+@using LoanDashboard.Models
 @model IEnumerable<StageCountDto>
 @{
     ViewData["Title"] = "Daily Pipeline";
-    var initialJson = System.Text.Json.JsonSerializer.Serialize(Model,
+    var partners = (ViewData["Partners"] as IReadOnlyList<PartnerDto>) ?? new List<PartnerDto>();
+    var initialJson  = System.Text.Json.JsonSerializer.Serialize(Model,
+        new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase });
+    var partnersJson = System.Text.Json.JsonSerializer.Serialize(partners,
         new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase });
 }
 
@@ -17,6 +21,37 @@
         <i id="btn-refresh-icon" class="bi bi-arrow-clockwise"></i>
         <span id="btn-refresh-text">Refresh</span>
     </button>
+</div>
+
+<!-- ── Partner filter bar ── -->
+<div class="card border-secondary-subtle mb-4">
+    <div class="card-body">
+        <form id="partner-filter-form" class="row g-3 align-items-end" onsubmit="return false;">
+            <div class="col-md-6 col-lg-5">
+                <label for="partner-select" class="form-label small text-uppercase fw-semibold text-muted mb-1" style="letter-spacing:.5px">
+                    <i class="bi bi-people me-1"></i> Partner
+                </label>
+                <select id="partner-select" class="form-select" aria-label="Select partner">
+                    <option value="0" selected>All Partners</option>
+                    @foreach (var p in partners)
+                    {
+                        <option value="@p.PartnerId">@p.PartnerName</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3 col-lg-3">
+                <button id="btn-search" type="submit" class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2">
+                    <span id="btn-search-spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                    <i id="btn-search-icon" class="bi bi-search"></i>
+                    <span id="btn-search-text">Search</span>
+                </button>
+            </div>
+            <div class="col-md-3 col-lg-4">
+                <div id="filter-status" class="small text-muted">Showing: <span id="filter-status-label" class="fw-semibold text-light">All Partners</span></div>
+                <div id="filter-error" class="small text-danger mt-1 d-none"></div>
+            </div>
+        </form>
+    </div>
 </div>
 
 <!-- ── KPI strip ── -->
@@ -65,7 +100,8 @@
 
 @section Scripts {
     <script>
-        window.__INITIAL_STAGES__ = @Html.Raw(initialJson);
+        window.__INITIAL_STAGES__   = @Html.Raw(initialJson);
+        window.__INITIAL_PARTNERS__ = @Html.Raw(partnersJson);
     </script>
     <script src="~/js/dashboard.js" asp-append-version="true"></script>
 }

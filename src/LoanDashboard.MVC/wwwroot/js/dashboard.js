@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Loan Dashboard — daily counts only (no thresholds, no alerts)
+   Loan Dashboard — daily counts with Partner filtering
    ========================================================================== */
 (() => {
   'use strict';
@@ -23,11 +23,24 @@
     chartCanvas:    $('stage-chart'),
     btnRefresh:     $('btn-refresh'),
     btnRefreshIcon: $('btn-refresh-icon'),
-    btnRefreshText: $('btn-refresh-text')
+    btnRefreshText: $('btn-refresh-text'),
+    partnerForm:    $('partner-filter-form'),
+    partnerSelect:  $('partner-select'),
+    btnSearch:      $('btn-search'),
+    btnSearchIcon:  $('btn-search-icon'),
+    btnSearchText:  $('btn-search-text'),
+    btnSearchSpin:  $('btn-search-spinner'),
+    filterLabel:    $('filter-status-label'),
+    filterError:    $('filter-error')
   };
 
-  let stages = window.__INITIAL_STAGES__ || [];
-  let chart  = null;
+  let stages         = window.__INITIAL_STAGES__   || [];
+  let partners       = window.__INITIAL_PARTNERS__ || [];
+  let chart          = null;
+  // Active partner filter: 0 = "All Partners" (SignalR live updates apply).
+  // Any non-zero value pauses the SignalR-driven repaint so the user sees
+  // only the partner they searched for.
+  let activePartnerId = 0;
 
   /* ─── Status dot ─── */
   function setStatus(state, text) {
@@ -71,7 +84,7 @@
     }).join('');
   }
 
-  /* ─── Bottleneck callout (just shows the busiest stage) ─── */
+  /* ─── Bottleneck callout ─── */
   function renderBottleneck() {
     const top = stages.reduce((p, c) => c.count > p.count ? c : p,
                               { count: 0, stageName: '—' });
@@ -156,6 +169,75 @@
   function tickStamp() {
     els.lastTick.textContent = 'Last update: ' + new Date().toLocaleTimeString();
   }
+  function showFilterError(msg) {
+    els.filterError.textContent = msg;
+    els.filterError.classList.remove('d-none');
+  }
+  function clearFilterError() {
+    els.filterError.textContent = '';
+    els.filterError.classList.add('d-none');
+  }
+
+  /* ─── Partner dropdown (re-hydrate from the API in case it changed) ─── */
+  async function loadPartners() {
+    try {
+      const res = await fetch('/api/stages/partners', { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      partners = await res.json();
+      const previous = els.partnerSelect.value;
+      const opts = ['<option value="0">All Partners</option>']
+        .concat(partners.map(p =>
+          `<option value="${p.partnerId}">${escapeHtml(p.partnerName)}</option>`));
+      els.partnerSelect.innerHTML = opts.join('');
+      // Keep current selection if still available
+      if ([...els.partnerSelect.options].some(o => o.value === previous)) {
+        els.partnerSelect.value = previous;
+      }
+    } catch (err) {
+      console.error('[Dashboard] partner load failed', err);
+      // Server-rendered options remain usable.
+    }
+  }
+
+  function setSearchBusy(busy) {
+    els.btnSearch.disabled = busy;
+    els.partnerSelect.disabled = busy;
+    if (busy) {
+      els.btnSearchSpin.classList.remove('d-none');
+      els.btnSearchIcon.classList.add('d-none');
+      els.btnSearchText.textContent = 'Loading…';
+    } else {
+      els.btnSearchSpin.classList.add('d-none');
+      els.btnSearchIcon.classList.remove('d-none');
+      els.btnSearchText.textContent = 'Search';
+    }
+  }
+
+  /* ─── Search handler — applies the partner filter and reloads counts ─── */
+  async function onSearch() {
+    clearFilterError();
+    const selectedId = parseInt(els.partnerSelect.value, 10) || 0;
+    const selectedLabel = els.partnerSelect.options[els.partnerSelect.selectedIndex]?.text || 'All Partners';
+
+    setSearchBusy(true);
+    try {
+      const url = selectedId > 0
+        ? `/api/stages/count?partnerId=${encodeURIComponent(selectedId)}`
+        : '/api/stages/count';
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      stages = await res.json();
+      activePartnerId = selectedId;
+      els.filterLabel.textContent = selectedLabel;
+      tickStamp();
+      renderAll();
+    } catch (err) {
+      console.error('[Dashboard] partner search failed', err);
+      showFilterError('Could not load counts for the selected partner. Please try again.');
+    } finally {
+      setSearchBusy(false);
+    }
+  }
 
   /* ─── SignalR ─── */
   function startSignalR() {
@@ -166,6 +248,10 @@
       .build();
 
     conn.on('ReceiveStageCounts', data => {
+      // Push from the poller is the all-partners view. Only apply it when the
+      // user is currently viewing all partners — otherwise we'd overwrite the
+      // partner-specific counts they searched for.
+      if (activePartnerId !== 0) return;
       stages = data;
       tickStamp();
       renderAll();
@@ -183,15 +269,18 @@
       });
   }
 
-  /* ─── Manual refresh button ─── */
+  /* ─── Manual refresh button — honours the active partner filter ─── */
   async function manualRefresh() {
-    if (els.btnRefresh.disabled) return;          // already in-flight
+    if (els.btnRefresh.disabled) return;
     els.btnRefresh.disabled = true;
     els.btnRefreshIcon.classList.add('spin');
     els.btnRefreshText.textContent = 'Refreshing…';
 
     try {
-      const res = await fetch('/api/stages/count', { cache: 'no-store' });
+      const url = activePartnerId > 0
+        ? `/api/stages/count?partnerId=${encodeURIComponent(activePartnerId)}`
+        : '/api/stages/count';
+      const res = await fetch(url, { cache: 'no-store' });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       stages = await res.json();
       tickStamp();
@@ -211,7 +300,10 @@
   /* ─── Boot ─── */
   document.addEventListener('DOMContentLoaded', () => {
     els.btnRefresh.addEventListener('click', manualRefresh);
+    els.partnerForm.addEventListener('submit', e => { e.preventDefault(); onSearch(); });
+    els.btnSearch.addEventListener('click',   e => { e.preventDefault(); onSearch(); });
     renderAll();
+    loadPartners();
     startSignalR();
   });
 })();

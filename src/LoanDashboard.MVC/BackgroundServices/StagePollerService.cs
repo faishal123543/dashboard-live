@@ -52,7 +52,9 @@ public class StagePollerService : BackgroundService
             using var scope = _scopeFactory.CreateScope();
             var service = scope.ServiceProvider.GetRequiredService<IStageService>();
 
-            var counts = await service.GetStageCountsAsync(ct);
+            // Poller always broadcasts the all-partners view; per-partner
+            // filtering is driven by the UI via the REST endpoint.
+            var counts = await service.GetStageCountsAsync(partnerId: null, ct);
 
             var hash = ComputeHash(counts);
             if (hash == _lastHash) return;

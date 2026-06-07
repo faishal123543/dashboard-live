@@ -5,17 +5,23 @@ namespace LoanDashboard.Controllers;
 
 public class HomeController : Controller
 {
-    private readonly IStageService _service;
+    private readonly IStageService _stageService;
+    private readonly IPartnerService _partnerService;
 
-    public HomeController(IStageService service)
+    public HomeController(IStageService stageService, IPartnerService partnerService)
     {
-        _service = service;
+        _stageService   = stageService;
+        _partnerService = partnerService;
     }
 
     public async Task<IActionResult> Index(CancellationToken ct)
     {
-        var stages = await _service.GetStageCountsAsync(ct);
-        return View(stages);
+        var stagesTask   = _stageService.GetStageCountsAsync(partnerId: null, ct);
+        var partnersTask = _partnerService.GetPartnersAsync(ct);
+        await Task.WhenAll(stagesTask, partnersTask);
+
+        ViewData["Partners"] = await partnersTask;
+        return View(await stagesTask);
     }
 
     [Route("Home/Error")]

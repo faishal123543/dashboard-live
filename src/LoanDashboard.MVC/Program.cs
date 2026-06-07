@@ -20,6 +20,7 @@ builder.Host.UseSerilog();
 
 // ─── Services ────────────────────────────────────────────────────────────────
 builder.Services.AddScoped<IStageService, StageService>();
+builder.Services.AddScoped<IPartnerService, PartnerService>();
 
 // Background poller — calls SQL every N seconds and pushes via SignalR
 builder.Services.AddHostedService<StagePollerService>();

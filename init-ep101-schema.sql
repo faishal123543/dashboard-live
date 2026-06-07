@@ -13,14 +13,23 @@ IF OBJECT_ID('dbo.EP101_Process',        'U') IS NOT NULL DROP TABLE dbo.EP101_P
 IF OBJECT_ID('dbo.EP101_StageEffective', 'U') IS NOT NULL DROP TABLE dbo.EP101_StageEffective;
 IF OBJECT_ID('dbo.EP101_StageStatus',    'U') IS NOT NULL DROP TABLE dbo.EP101_StageStatus;
 IF OBJECT_ID('dbo.EP101_ActionMaster',   'U') IS NOT NULL DROP TABLE dbo.EP101_ActionMaster;
+IF OBJECT_ID('dbo.EP101_Partner',        'U') IS NOT NULL DROP TABLE dbo.EP101_Partner;
 GO
 
 -- ───────────── 2. Tables ─────────────
+CREATE TABLE dbo.EP101_Partner (
+    PartnerId   INT IDENTITY(1,1) PRIMARY KEY,
+    PartnerName NVARCHAR(150) NOT NULL,
+    IsActive    BIT NOT NULL DEFAULT 1
+);
+
 CREATE TABLE dbo.EP101_Process (
     Id          INT IDENTITY(1,1) PRIMARY KEY,
     ProcessNo   NVARCHAR(50) NOT NULL,
-    Workflow_Id INT NOT NULL
+    Workflow_Id INT NOT NULL,
+    Partner_Id  INT NULL
 );
+CREATE INDEX IX_Process_Partner ON dbo.EP101_Process(Partner_Id);
 
 CREATE TABLE dbo.EP101_ProcessStage (
     Id              INT IDENTITY(1,1) PRIMARY KEY,
@@ -77,15 +86,25 @@ INSERT INTO dbo.EP101_StageStatus (StatusName_E, StatusName_A) VALUES
 
 INSERT INTO dbo.EP101_ActionMaster (ActionName_E) VALUES
     (N'Approve'), (N'Reject'), (N'Forward'), (N'Return');
+
+INSERT INTO dbo.EP101_Partner (PartnerName, IsActive) VALUES
+    (N'Al Rajhi Bank',        1),
+    (N'Saudi National Bank',  1),
+    (N'Riyad Bank',           1),
+    (N'Bank Albilad',         1),
+    (N'Alinma Bank',          1);
 GO
 
--- ───────────── 4. Sample processes ─────────────
+-- ───────────── 4. Sample processes (randomly assigned to partners) ─────────────
 ;WITH n AS (
     SELECT TOP (50) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS r
     FROM sys.all_objects
 )
-INSERT INTO dbo.EP101_Process (ProcessNo, Workflow_Id)
-SELECT N'PROC-' + RIGHT(N'00000' + CAST(r AS NVARCHAR(10)), 5), 1
+INSERT INTO dbo.EP101_Process (ProcessNo, Workflow_Id, Partner_Id)
+SELECT
+    N'PROC-' + RIGHT(N'00000' + CAST(r AS NVARCHAR(10)), 5),
+    1,
+    ((ABS(CHECKSUM(NEWID())) % 5) + 1)   -- PartnerId 1..5
 FROM n;
 GO
 
