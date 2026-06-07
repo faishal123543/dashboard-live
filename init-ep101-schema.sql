@@ -95,20 +95,34 @@ INSERT INTO dbo.EP101_Partner (PartnerName, IsActive) VALUES
     (N'Alinma Bank',          1);
 GO
 
--- ───────────── 4. Sample processes (randomly assigned to partners) ─────────────
+-- ───────────── 4. Sample processes — distinct volume per partner ─────────────
+-- Partner 1 → 80 processes  (Al Rajhi Bank)
+-- Partner 2 → 60 processes  (Saudi National Bank)
+-- Partner 3 → 40 processes  (Riyad Bank)
+-- Partner 4 → 25 processes  (Bank Albilad)
+-- Partner 5 → 15 processes  (Alinma Bank)
+-- Total      → 220 processes  → "All Partners" view shows the full pipeline.
+DECLARE @PartnerVolumes TABLE (PartnerId INT, Qty INT);
+INSERT INTO @PartnerVolumes (PartnerId, Qty) VALUES
+    (1, 80), (2, 60), (3, 40), (4, 25), (5, 15);
+
 ;WITH n AS (
-    SELECT TOP (50) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS r
-    FROM sys.all_objects
+    SELECT TOP (1000) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS r
+    FROM sys.all_objects a CROSS JOIN sys.all_objects b
 )
 INSERT INTO dbo.EP101_Process (ProcessNo, Workflow_Id, Partner_Id)
 SELECT
-    N'PROC-' + RIGHT(N'00000' + CAST(r AS NVARCHAR(10)), 5),
+    N'PROC-P' + CAST(pv.PartnerId AS NVARCHAR(2)) + N'-' +
+        RIGHT(N'00000' + CAST(n.r AS NVARCHAR(10)), 5),
     1,
-    ((ABS(CHECKSUM(NEWID())) % 5) + 1)   -- PartnerId 1..5
-FROM n;
+    pv.PartnerId
+FROM   @PartnerVolumes pv
+JOIN   n ON n.r <= pv.Qty;
 GO
 
--- ───────────── 5. ProcessStage rows (every process completes a few stages today) ─────────────
+-- ───────────── 5. ProcessStage rows — varied per-stage counts per partner ─────────────
+-- Each process completes a random subset of stages so that filtering by
+-- partner produces visibly different distributions across the 12 stages.
 INSERT INTO dbo.EP101_ProcessStage
     (Process_Id, ProcessNo, StageNo, IsApplicable, StageStatus_Id, CreatedOn, ReceivedOn, CompletedOn)
 SELECT
@@ -122,11 +136,11 @@ SELECT
     DATEADD(SECOND, -ABS(CHECKSUM(NEWID()) %  7200), SYSUTCDATETIME())              -- completed within last 2h
 FROM      dbo.EP101_Process p
 CROSS APPLY (
-    -- each process completes a random number of stages (1..stage_no)
+    -- each process completes a random number of stages (1..12)
     SELECT StageNo
     FROM   dbo.EP101_StageEffective
     WHERE  WFEffective_Id = 1
-      AND  StageNo <= (ABS(CHECKSUM(NEWID())) % 12) + 1
+      AND  StageNo <= (ABS(CHECKSUM(NEWID(), p.Id)) % 12) + 1
 ) s;
 GO
 
